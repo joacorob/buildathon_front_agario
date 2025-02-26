@@ -3,18 +3,20 @@
     font-size: 14px;
 }
 
-html, body {
+html,
+body {
     background-color: #222;
     overflow: hidden;
 }
 
-html, body, canvas {
+html,
+body,
+canvas {
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
     background: rgba(0, 0, 0, 0.4);
-
 }
 
 div {
@@ -48,7 +50,7 @@ div {
     position: absolute;
     padding: 10px;
     background: rgba(0, 0, 0, 0.4);
-    color: #FFF;
+    color: #fff;
     font-size: 16.1px;
     top: 10px;
     right: 10px;
@@ -61,7 +63,7 @@ div {
 }
 
 #status .me {
-    color: #FF8888;
+    color: #ff8888;
     font-size: 16.1px;
 }
 
@@ -114,7 +116,7 @@ div {
     padding: 8px;
     background: transparent;
     border: none;
-    border-top: 1px solid #DDD;
+    border-top: 1px solid #ddd;
     outline: none;
 }
 
@@ -152,12 +154,16 @@ div {
     outline: none;
 }
 
-#playerNameInput:focus, #playerNameInput.focus {
-    border: solid 1px #CCCCCC;
-    box-shadow: 0 0 3px 1px #DDDDDD;
+#playerNameInput:focus,
+#playerNameInput.focus {
+    border: solid 1px #cccccc;
+    box-shadow: 0 0 3px 1px #dddddd;
 }
 
-#startButton, #spectateButton {
+#startButton,
+#btn-connect,
+#btn-disconnect,
+#spectateButton {
     position: relative;
     margin: auto;
     margin-top: 10px;
@@ -180,10 +186,16 @@ div {
     margin-bottom: 10px;
 }
 
-#spectateButton:active, #spectateButton:hover,
-#startButton:active, #startButton:hover {
+#spectateButton:active,
+#spectateButton:hover,
+#btn-connect:active,
+#btn-disconnect:active,
+#btn-connect:hover,
+#btn-disconnect:hover,
+#startButton:active,
+#startButton:hover {
     top: 1px;
-    background: #55D88B;
+    background: #55d88b;
     outline: none;
     -webkit-box-shadow: none;
     box-shadow: none;
@@ -212,15 +224,17 @@ div {
     margin-bottom: 10px;
 }
 
-#settingsButton:active, #settingsButton:hover {
+#settingsButton:active,
+#settingsButton:hover {
     top: 1px;
-    background: #55D88B;
+    background: #55d88b;
     outline: none;
     -webkit-box-shadow: none;
     box-shadow: none;
 }
 
-#settings, #startMenuWrapper {
+#settings,
+#startMenuWrapper {
     -webkit-transition: max-height 1s;
     -moz-transition: max-height 1s;
     -ms-transition: max-height 1s;
@@ -247,7 +261,7 @@ div {
 #startMenu .input-error {
     color: red;
     opacity: 0;
-    font-size : 12px;
+    font-size: 12px;
 }
 
 #startMenuWrapper {
@@ -261,25 +275,25 @@ div {
     opacity: 0;
 }
 
-@media only screen  and (min-width : 1224px) {
-#mobile {
-display: none;
-	}
+@media only screen and (min-width: 1224px) {
+    #mobile {
+        display: none;
+    }
 }
 
-@media only screen  and (max-width : 1224px) {
-#chatbox {
-display: none;
-        }
+@media only screen and (max-width: 1224px) {
+    #chatbox {
+        display: none;
+    }
 }
 
-input [type="image"]:focus{
- border:none;
- outline: 1px solid transparent;
- border-style: none;
+input [type="image"]:focus {
+    border: none;
+    outline: 1px solid transparent;
+    border-style: none;
 }
 
 *:focus {
- outline: 1px solid transparent;
- border-style: none;
+    outline: 1px solid transparent;
+    border-style: none;
 }
