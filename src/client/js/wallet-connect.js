@@ -33,16 +33,36 @@ function init() {
 }
 
 async function fetchAccountData() {
+    console.log('fetching account data')
     web3 = new Web3(provider);
     const accounts = await web3.eth.getAccounts();
     mainAccount = accounts[0];
     // 💡 Hacer mainAccount accesible desde otros scripts
     window.mainAccount = mainAccount;
-
     console.log("Connected account:", mainAccount);
-
     document.querySelector("#notconnected").style.display = "none";
     document.querySelector("#connected").style.display = "block";
+    
+
+    // dummy data we need to query smart contract to see if a deposit was already made or not.
+    let accountBalance = 0
+    // if account balance is 0 then display
+    if(accountBalance===0){
+        console.log('account balance',accountBalance)
+        document.querySelector("#startButton").style.display = "none";
+    }
+}
+
+async function handleDeposit(){
+    // the logic in this function is to be implemented. 
+    try {
+        // Define the recipient address and amount
+        // Call web3.eth.sendTransaction()
+        // Handle the transaction response
+        // Update UI based on success
+    } catch (error) {
+        // Handle errors
+    }
 }
 
 async function refreshAccountData() {
@@ -106,6 +126,9 @@ window.addEventListener("load", async () => {
         .querySelector("#btn-disconnect")
         .addEventListener("click", disconnect);
     document.querySelector("#startButton").addEventListener("click", startGame);
+    
+    // onclick listner to handle funding account.
+    document.querySelector("#fundButton").addEventListener("click", handleDeposit);
 });
 
 module.exports = { mainAccount, web3, provider };
