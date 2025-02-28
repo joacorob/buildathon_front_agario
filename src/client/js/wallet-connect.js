@@ -32,18 +32,73 @@ function init() {
     });
 }
 
+// --------This function needs to be refined------------------- 
 async function fetchAccountData() {
     web3 = new Web3(provider);
     console.log({ web3 });
     const accounts = await web3.eth.getAccounts();
     mainAccount = accounts[0];
-    // 💡 Make mainAccount accessible from other scripts
     window.mainAccount = mainAccount;
 
     console.log("Connected account:", mainAccount);
 
     document.querySelector("#notconnected").style.display = "none";
     document.querySelector("#connected").style.display = "block";
+
+    // Mock data for testing
+    const mockData = {
+        "data": {
+            "vouchers": {
+                "edges": [
+                    {
+                        "node": {
+                            "destination": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+                            "payload": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000"
+                        }
+                    },
+                    {
+                        "node": {
+                            "destination": "0x84f33e797364bdfc4511bf5ab35b0372aa96ba69",
+                            "payload": "0x00000000000000000000000000000000000000000000000098a7d9b8314c0000"
+                        }
+                    }
+                ]
+            }
+        }
+    };
+
+    // Extract vouchers array with just destination and payload
+    const vouchers = mockData.data.vouchers.edges.map(edge => ({
+        destination: edge.node.destination,
+        payload: edge.node.payload
+    }));
+
+    // Populate vouchers list
+    const vouchersList = document.getElementById('vouchers-list');
+    vouchersList.innerHTML = ''; // Clear existing content
+
+    if (vouchers.length === 0) {
+        vouchersList.innerHTML = '<p>No vouchers found</p>';
+    } else {
+        vouchers.forEach((voucher, index) => {
+            const voucherElement = document.createElement('div');
+            voucherElement.className = 'voucher-item';
+            
+            // Convert payload from wei to ETH for display
+            const ethValue = web3.utils.fromWei(voucher.payload, 'ether');
+            
+            voucherElement.innerHTML = `
+                <div class="voucher-content">
+                    <p><strong>Voucher #${index + 1}</strong></p>
+                    <p>Amount: ${ethValue} ETH</p>
+                    <p>Destination: ${voucher.destination}</p>
+                </div>
+            `;
+            vouchersList.appendChild(voucherElement);
+        });
+    }
+
+    console.log('Vouchers:', vouchers);
 }
 
 async function refreshAccountData() {
@@ -173,8 +228,26 @@ async function startGame() {
     // Implement game logic here
 }
 
+function initTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons and content
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding content
+            button.classList.add('active');
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+    });
+}
+
 window.addEventListener("load", async () => {
     init();
+    initTabs();
     document.querySelector("#btn-connect").addEventListener("click", connect);
     document
         .querySelector("#btn-disconnect")
