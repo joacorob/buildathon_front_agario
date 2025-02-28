@@ -60,6 +60,7 @@
     "socket.io-client": "^4.6.1",
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.0",
+    "viem": "^2.23.5",
     "webpack": "^5.82.1",
     "webpack-stream": "^7.0.0"
   },

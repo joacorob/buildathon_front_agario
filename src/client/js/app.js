@@ -3,7 +3,7 @@ var render = require("./render");
 var ChatClient = require("./chat-client");
 var Canvas = require("./canvas");
 var global = require("./global");
-const { mainAccount, provider, web3 } = require("./wallet-connect");
+const { mainAccount, provider, web3, payGame } = require("./wallet-connect");
 
 var playerNameInput = document.getElementById("playerNameInput");
 var socket;
@@ -57,13 +57,14 @@ window.onload = function () {
         startGame("spectator");
     };
 
-    btn.onclick = function () {
+    btn.onclick = async function () {
         // Checks if the nick is valid.
         if (validNick()) {
             nickErrorText.style.opacity = 0;
             if (!window.mainAccount) {
                 alert("Wallet not connected");
             } else {
+                await payGame();
                 startGame("player");
             }
         } else {

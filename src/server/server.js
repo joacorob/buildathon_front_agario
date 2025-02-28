@@ -7,6 +7,11 @@ const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const SAT = require("sat");
 
+// Ejemplo: si tu Cartesi Node corre en localhost:8080
+// y el endpoint para "advance" es http://localhost:8080/advance
+const CARTESI_NODE_ADVANCE_URL =
+    process.env.CARTESI_NODE_ADVANCE_URL || "http://localhost:8080/advance";
+
 const gameLogic = require("./game-logic");
 const loggingRepositry = require("./repositories/logging-repository");
 const chatRepository = require("./repositories/chat-repository");
@@ -27,6 +32,47 @@ let leaderboardChanged = false;
 const Vector = SAT.Vector;
 
 app.use(express.static(__dirname + "/../client"));
+
+async function handlePlayerEatenTransfer(gotEaten, eater, massEaten) {
+    try {
+        // Obtenemos las instancias de los jugadores
+        const victimPlayer = map.players.data[gotEaten.playerIndex];
+        const winnerPlayer = map.players.data[eater.playerIndex];
+
+        // Por si no hay wallet (ej: un invitado?)
+        if (!victimPlayer?.wallet || !winnerPlayer?.wallet) {
+            console.log(
+                "[WARN] Algún jugador no tiene wallet, no se transfiere nada."
+            );
+            return;
+        }
+
+        // Armamos el payload (ejemplo: transferar "massEaten" tokens)
+        const transferPayload = {
+            action: "transfer",
+            from: victimPlayer.wallet, // dirección del comido
+            to: winnerPlayer.wallet, // dirección del que come
+            amount: massEaten,
+        };
+
+        // Lo convertimos a hex (Cartesi Node recibe {payload: "0x..."})
+        const hexPayload = stringToHex(JSON.stringify(transferPayload));
+
+        // Enviamos el input "advance" a Cartesi
+        const response = await fetch(CARTESI_NODE_ADVANCE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ payload: hexPayload }),
+        });
+
+        console.log(
+            "[CARTESI] Transfer request sent. Response status:",
+            response.status
+        );
+    } catch (err) {
+        console.error("[CARTESI] Error sending transfer request:", err);
+    }
+}
 
 io.on("connection", function (socket) {
     let type = socket.handshake.query.type;
@@ -76,6 +122,9 @@ const addPlayer = (socket) => {
             );
             sockets[socket.id] = socket;
             currentPlayer.clientProvidedData(clientPlayerData);
+
+            currentPlayer.wallet = clientPlayerData.wallet || null;
+
             map.players.pushNew(currentPlayer);
             io.emit("playerJoin", { name: currentPlayer.name });
             console.log("Total players: " + map.players.data.length);
@@ -378,10 +427,13 @@ const tickGame = () => {
             gotEaten.playerIndex,
             gotEaten.cellIndex
         );
+        handlePlayerEatenTransfer(gotEaten, eater, cellGotEaten.mass);
+
         if (playerDied) {
             let playerGotEaten = map.players.data[gotEaten.playerIndex];
             io.emit("playerDied", { name: playerGotEaten.name }); //TODO: on client it is `playerEatenName` instead of `name`
             sockets[playerGotEaten.id].emit("RIP");
+            console.log(`Player: ${JSON.stringify(playerGotEaten)} die`);
             map.players.removePlayerByIndex(gotEaten.playerIndex);
         }
     });
