@@ -91,7 +91,9 @@ async function fetchAccountData() {
                 <div class="voucher-content">
                     <p><strong>Voucher #${index + 1}</strong></p>
                     <p>Amount: ${ethValue} ETH</p>
-                    <p>Destination: ${voucher.destination}</p>
+                    <button class="claim-button" onclick="claimVoucher('${voucher.destination}', '${voucher.payload}')">
+                        Claim Voucher
+                    </button>
                 </div>
             `;
             vouchersList.appendChild(voucherElement);
@@ -254,5 +256,20 @@ window.addEventListener("load", async () => {
         .addEventListener("click", disconnect);
     document.querySelector("#startButton").addEventListener("click", startGame);
 });
+
+async function claimVoucher(destination, payload) {
+    try {
+        console.log('Claiming voucher:', { destination, payload });
+        // Here you would implement the actual claiming logic
+        // For now, just show an alert
+        alert('Claiming voucher... (to be implemented)');
+    } catch (error) {
+        console.error('Error claiming voucher:', error);
+        alert('Failed to claim voucher');
+    }
+}
+
+// Make it available globally since we're using onclick in the HTML
+window.claimVoucher = claimVoucher;
 
 module.exports = { mainAccount, web3, provider, payGame };

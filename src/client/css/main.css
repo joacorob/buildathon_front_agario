@@ -121,6 +121,14 @@ div {
     content: " »";
 }
 
+.chatbox .chat-list li.system:before {
+    content: "» ";
+}
+
+.chatbox .chat-list li.system:after {
+    content: " »";
+}
+
 .chatbox .chat-input {
     pointer-events: all;
     box-sizing: border-box;
@@ -363,4 +371,23 @@ input [type="image"]:focus {
 
 .voucher-content strong {
     color: #4CAF50;
+}
+
+.claim-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.claim-button:hover {
+    background: #45a049;
+}
+
+.claim-button:active {
+    background: #3d8b40;
 }
