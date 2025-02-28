@@ -7,13 +7,26 @@ const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const SAT = require("sat");
 
-// Ejemplo: si tu Cartesi Node corre en localhost:8080
-// y el endpoint para "advance" es http://localhost:8080/advance
-const CARTESI_NODE_ADVANCE_URL =
-    process.env.CARTESI_NODE_ADVANCE_URL || "http://localhost:8080/advance";
+require("dotenv").config();
+
+const { ethers } = require("ethers");
+
+// Contract and dApp addresses
+const CONTRACT_ADDRESS = "0x59b22D57D4f067708AB0c00552767405926dc768";
+const DAPP_ADDRESS = "0xab7528bb862fB57E8A2BCd567a2e929a0Be56a5e";
+
+const contractABI = [
+    "function addInput(address _dapp, bytes _input) external returns (bytes32)",
+];
+
+// Set up provider and signer (make sure to use a secure private key)
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL); // Ensure `RPC_URL` is defined
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider); // Define `PRIVATE_KEY`
+
+const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
 
 const gameLogic = require("./game-logic");
-const loggingRepositry = require("./repositories/logging-repository");
+const loggingRepository = require("./repositories/logging-repository");
 const chatRepository = require("./repositories/chat-repository");
 const config = require("../../config");
 const util = require("./lib/util");
@@ -35,48 +48,38 @@ app.use(express.static(__dirname + "/../client"));
 
 async function handlePlayerEatenTransfer(gotEaten, eater, massEaten) {
     try {
-        // Obtenemos las instancias de los jugadores
+        // Get player instances
         const victimPlayer = map.players.data[gotEaten.playerIndex];
         const winnerPlayer = map.players.data[eater.playerIndex];
 
-        // Por si no hay wallet (ej: un invitado?)
+        // Check if both players have wallets
         if (!victimPlayer?.wallet || !winnerPlayer?.wallet) {
             console.log(
-                "[WARN] Algún jugador no tiene wallet, no se transfiere nada."
+                "[WARN] A player does not have a wallet, no transfer occurs."
             );
             return;
         }
 
-        // Armamos el payload (ejemplo: transferar "massEaten" tokens)
+        // Create payload in JSON format and convert to HEX
         const transferPayload = {
-            action: "transfer",
-            from: victimPlayer.wallet, // dirección del comido
-            to: winnerPlayer.wallet, // dirección del que come
-            amount: massEaten,
+            win: winnerPlayer.wallet,
+            loss: victimPlayer.wallet,
         };
+        const hexPayload = ethers.toUtf8Bytes(JSON.stringify(transferPayload));
 
-        // Lo convertimos a hex (Cartesi Node recibe {payload: "0x..."})
-        const hexPayload = stringToHex(JSON.stringify(transferPayload));
+        // Send the transaction to the contract
+        const tx = await contract.addInput(DAPP_ADDRESS, hexPayload);
+        await tx.wait(); // Wait for transaction confirmation
 
-        // Enviamos el input "advance" a Cartesi
-        const response = await fetch(CARTESI_NODE_ADVANCE_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ payload: hexPayload }),
-        });
-
-        console.log(
-            "[CARTESI] Transfer request sent. Response status:",
-            response.status
-        );
+        console.log("[WEB3] Transfer successfully sent, hash:", tx.hash);
     } catch (err) {
-        console.error("[CARTESI] Error sending transfer request:", err);
+        console.error("[WEB3] Error sending transfer:", err);
     }
 }
 
 io.on("connection", function (socket) {
     let type = socket.handshake.query.type;
-    console.log("User has connected: ", type);
+    console.log("User connected: ", type);
     switch (type) {
         case "player":
             addPlayer(socket);
@@ -85,7 +88,7 @@ io.on("connection", function (socket) {
             addSpectator(socket);
             break;
         default:
-            console.log("Unknown user type, not doing anything.");
+            console.log("Unknown user type, no action taken.");
     }
 });
 
@@ -111,7 +114,7 @@ const addPlayer = (socket) => {
         currentPlayer.init(generateSpawnpoint(), config.defaultPlayerMass);
 
         if (map.players.findIndexByID(socket.id) > -1) {
-            console.log("[INFO] Player ID is already connected, kicking.");
+            console.log("[INFO] Player ID already connected, kicking.");
             socket.disconnect();
         } else if (!util.validNick(clientPlayerData.name)) {
             socket.emit("kick", "Invalid username.");
@@ -131,408 +134,28 @@ const addPlayer = (socket) => {
         }
     });
 
-    socket.on("pingcheck", () => {
-        socket.emit("pongcheck");
-    });
-
-    socket.on("windowResized", (data) => {
-        currentPlayer.screenWidth = data.screenWidth;
-        currentPlayer.screenHeight = data.screenHeight;
-    });
-
-    socket.on("respawn", () => {
-        map.players.removePlayerByID(currentPlayer.id);
-        socket.emit("welcome", currentPlayer, {
-            width: config.gameWidth,
-            height: config.gameHeight,
-        });
-        console.log("[INFO] User " + currentPlayer.name + " has respawned");
-    });
-
     socket.on("disconnect", () => {
         map.players.removePlayerByID(currentPlayer.id);
         console.log("[INFO] User " + currentPlayer.name + " has disconnected");
         socket.broadcast.emit("playerDisconnect", { name: currentPlayer.name });
     });
+};
 
-    socket.on("playerChat", (data) => {
-        var _sender = data.sender.replace(/(<([^>]+)>)/gi, "");
-        var _message = data.message.replace(/(<([^>]+)>)/gi, "");
-
-        if (config.logChat === 1) {
-            console.log(
-                "[CHAT] [" +
-                    new Date().getHours() +
-                    ":" +
-                    new Date().getMinutes() +
-                    "] " +
-                    _sender +
-                    ": " +
-                    _message
+setInterval(() => {
+    map.players.data.forEach((player) => {
+        if (
+            player.lastHeartbeat <
+            new Date().getTime() - config.maxHeartbeatInterval
+        ) {
+            sockets[player.id]?.emit(
+                "kick",
+                "Last heartbeat received too long ago."
             );
-        }
-
-        socket.broadcast.emit("serverSendPlayerChat", {
-            sender: _sender,
-            message: _message.substring(0, 35),
-        });
-
-        chatRepository
-            .logChatMessage(_sender, _message, currentPlayer.ipAddress)
-            .catch((err) =>
-                console.error("Error when attempting to log chat message", err)
-            );
-    });
-
-    socket.on("pass", async (data) => {
-        const password = data[0];
-        if (password === config.adminPass) {
-            console.log(
-                "[ADMIN] " + currentPlayer.name + " just logged in as an admin."
-            );
-            socket.emit("serverMSG", "Welcome back " + currentPlayer.name);
-            socket.broadcast.emit(
-                "serverMSG",
-                currentPlayer.name + " just logged in as an admin."
-            );
-            currentPlayer.admin = true;
-        } else {
-            console.log(
-                "[ADMIN] " +
-                    currentPlayer.name +
-                    " attempted to log in with incorrect password."
-            );
-
-            socket.emit("serverMSG", "Password incorrect, attempt logged.");
-
-            loggingRepositry
-                .logFailedLoginAttempt(
-                    currentPlayer.name,
-                    currentPlayer.ipAddress
-                )
-                .catch((err) =>
-                    console.error(
-                        "Error when attempting to log failed login attempt",
-                        err
-                    )
-                );
+            sockets[player.id]?.disconnect();
         }
     });
+}, 1000 / 60);
 
-    socket.on("kick", (data) => {
-        if (!currentPlayer.admin) {
-            socket.emit(
-                "serverMSG",
-                "You are not permitted to use this command."
-            );
-            return;
-        }
-
-        var reason = "";
-        var worked = false;
-        for (let playerIndex in map.players.data) {
-            let player = map.players.data[playerIndex];
-            if (player.name === data[0] && !player.admin && !worked) {
-                if (data.length > 1) {
-                    for (var f = 1; f < data.length; f++) {
-                        if (f === data.length) {
-                            reason = reason + data[f];
-                        } else {
-                            reason = reason + data[f] + " ";
-                        }
-                    }
-                }
-                if (reason !== "") {
-                    console.log(
-                        "[ADMIN] User " +
-                            player.name +
-                            " kicked successfully by " +
-                            currentPlayer.name +
-                            " for reason " +
-                            reason
-                    );
-                } else {
-                    console.log(
-                        "[ADMIN] User " +
-                            player.name +
-                            " kicked successfully by " +
-                            currentPlayer.name
-                    );
-                }
-                socket.emit(
-                    "serverMSG",
-                    "User " +
-                        player.name +
-                        " was kicked by " +
-                        currentPlayer.name
-                );
-                sockets[player.id].emit("kick", reason);
-                sockets[player.id].disconnect();
-                map.players.removePlayerByIndex(playerIndex);
-                worked = true;
-            }
-        }
-        if (!worked) {
-            socket.emit(
-                "serverMSG",
-                "Could not locate user or user is an admin."
-            );
-        }
-    });
-
-    // Heartbeat function, update everytime.
-    socket.on("0", (target) => {
-        currentPlayer.lastHeartbeat = new Date().getTime();
-        if (target.x !== currentPlayer.x || target.y !== currentPlayer.y) {
-            currentPlayer.target = target;
-        }
-    });
-
-    socket.on("1", function () {
-        // Fire food.
-        const minCellMass = config.defaultPlayerMass + config.fireFood;
-        for (let i = 0; i < currentPlayer.cells.length; i++) {
-            if (currentPlayer.cells[i].mass >= minCellMass) {
-                currentPlayer.changeCellMass(i, -config.fireFood);
-                map.massFood.addNew(currentPlayer, i, config.fireFood);
-            }
-        }
-    });
-
-    socket.on("2", () => {
-        currentPlayer.userSplit(config.limitSplit, config.defaultPlayerMass);
-    });
-};
-
-const addSpectator = (socket) => {
-    socket.on("gotit", function () {
-        sockets[socket.id] = socket;
-        spectators.push(socket.id);
-        io.emit("playerJoin", { name: "" });
-    });
-
-    socket.emit(
-        "welcome",
-        {},
-        {
-            width: config.gameWidth,
-            height: config.gameHeight,
-        }
-    );
-};
-
-const tickPlayer = (currentPlayer) => {
-    if (
-        currentPlayer.lastHeartbeat <
-        new Date().getTime() - config.maxHeartbeatInterval
-    ) {
-        sockets[currentPlayer.id].emit(
-            "kick",
-            "Last heartbeat received over " +
-                config.maxHeartbeatInterval +
-                " ago."
-        );
-        sockets[currentPlayer.id].disconnect();
-    }
-
-    currentPlayer.move(
-        config.slowBase,
-        config.gameWidth,
-        config.gameHeight,
-        INIT_MASS_LOG
-    );
-
-    const isEntityInsideCircle = (point, circle) => {
-        return SAT.pointInCircle(new Vector(point.x, point.y), circle);
-    };
-
-    const canEatMass = (cell, cellCircle, cellIndex, mass) => {
-        if (isEntityInsideCircle(mass, cellCircle)) {
-            if (
-                mass.id === currentPlayer.id &&
-                mass.speed > 0 &&
-                cellIndex === mass.num
-            )
-                return false;
-            if (cell.mass > mass.mass * 1.1) return true;
-        }
-
-        return false;
-    };
-
-    const canEatVirus = (cell, cellCircle, virus) => {
-        return (
-            virus.mass < cell.mass && isEntityInsideCircle(virus, cellCircle)
-        );
-    };
-
-    const cellsToSplit = [];
-    for (
-        let cellIndex = 0;
-        cellIndex < currentPlayer.cells.length;
-        cellIndex++
-    ) {
-        const currentCell = currentPlayer.cells[cellIndex];
-
-        const cellCircle = currentCell.toCircle();
-
-        const eatenFoodIndexes = util.getIndexes(map.food.data, (food) =>
-            isEntityInsideCircle(food, cellCircle)
-        );
-        const eatenMassIndexes = util.getIndexes(map.massFood.data, (mass) =>
-            canEatMass(currentCell, cellCircle, cellIndex, mass)
-        );
-        const eatenVirusIndexes = util.getIndexes(map.viruses.data, (virus) =>
-            canEatVirus(currentCell, cellCircle, virus)
-        );
-
-        if (eatenVirusIndexes.length > 0) {
-            cellsToSplit.push(cellIndex);
-            map.viruses.delete(eatenVirusIndexes);
-        }
-
-        let massGained = eatenMassIndexes.reduce(
-            (acc, index) => acc + map.massFood.data[index].mass,
-            0
-        );
-
-        map.food.delete(eatenFoodIndexes);
-        map.massFood.remove(eatenMassIndexes);
-        massGained += eatenFoodIndexes.length * config.foodMass;
-        currentPlayer.changeCellMass(cellIndex, massGained);
-    }
-    currentPlayer.virusSplit(
-        cellsToSplit,
-        config.limitSplit,
-        config.defaultPlayerMass
-    );
-};
-
-const tickGame = () => {
-    map.players.data.forEach(tickPlayer);
-    map.massFood.move(config.gameWidth, config.gameHeight);
-
-    map.players.handleCollisions(function (gotEaten, eater) {
-        const cellGotEaten = map.players.getCell(
-            gotEaten.playerIndex,
-            gotEaten.cellIndex
-        );
-
-        map.players.data[eater.playerIndex].changeCellMass(
-            eater.cellIndex,
-            cellGotEaten.mass
-        );
-
-        const playerDied = map.players.removeCell(
-            gotEaten.playerIndex,
-            gotEaten.cellIndex
-        );
-        handlePlayerEatenTransfer(gotEaten, eater, cellGotEaten.mass);
-
-        if (playerDied) {
-            let playerGotEaten = map.players.data[gotEaten.playerIndex];
-            io.emit("playerDied", { name: playerGotEaten.name }); //TODO: on client it is `playerEatenName` instead of `name`
-            sockets[playerGotEaten.id].emit("RIP");
-            console.log(`Player: ${JSON.stringify(playerGotEaten)} die`);
-            map.players.removePlayerByIndex(gotEaten.playerIndex);
-        }
-    });
-};
-
-const calculateLeaderboard = () => {
-    const topPlayers = map.players.getTopPlayers();
-
-    if (leaderboard.length !== topPlayers.length) {
-        leaderboard = topPlayers;
-        leaderboardChanged = true;
-    } else {
-        for (let i = 0; i < leaderboard.length; i++) {
-            if (leaderboard[i].id !== topPlayers[i].id) {
-                leaderboard = topPlayers;
-                leaderboardChanged = true;
-                break;
-            }
-        }
-    }
-};
-
-const gameloop = () => {
-    if (map.players.data.length > 0) {
-        calculateLeaderboard();
-        map.players.shrinkCells(
-            config.massLossRate,
-            config.defaultPlayerMass,
-            config.minMassLoss
-        );
-    }
-
-    map.balanceMass(
-        config.foodMass,
-        config.gameMass,
-        config.maxFood,
-        config.maxVirus
-    );
-};
-
-const sendUpdates = () => {
-    spectators.forEach(updateSpectator);
-    map.enumerateWhatPlayersSee(function (
-        playerData,
-        visiblePlayers,
-        visibleFood,
-        visibleMass,
-        visibleViruses
-    ) {
-        sockets[playerData.id].emit(
-            "serverTellPlayerMove",
-            playerData,
-            visiblePlayers,
-            visibleFood,
-            visibleMass,
-            visibleViruses
-        );
-        if (leaderboardChanged) {
-            sendLeaderboard(sockets[playerData.id]);
-        }
-    });
-
-    leaderboardChanged = false;
-};
-
-const sendLeaderboard = (socket) => {
-    socket.emit("leaderboard", {
-        players: map.players.data.length,
-        leaderboard,
-    });
-};
-const updateSpectator = (socketID) => {
-    let playerData = {
-        x: config.gameWidth / 2,
-        y: config.gameHeight / 2,
-        cells: [],
-        massTotal: 0,
-        hue: 100,
-        id: socketID,
-        name: "",
-    };
-    sockets[socketID].emit(
-        "serverTellPlayerMove",
-        playerData,
-        map.players.data,
-        map.food.data,
-        map.massFood.data,
-        map.viruses.data
-    );
-    if (leaderboardChanged) {
-        sendLeaderboard(sockets[socketID]);
-    }
-};
-
-setInterval(tickGame, 1000 / 60);
-setInterval(gameloop, 1000);
-setInterval(sendUpdates, 1000 / config.networkUpdateFactor);
-
-// Don't touch, IP configurations.
 var ipaddress =
     process.env.OPENSHIFT_NODEJS_IP || process.env.IP || config.host;
 var serverport =

@@ -3,3 +3,6 @@ npm-debug.log
 .idea
 client/bower_components
 bin
+
+
+.env
