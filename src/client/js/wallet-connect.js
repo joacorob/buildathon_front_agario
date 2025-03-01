@@ -14,6 +14,8 @@ let web3;
 // User account
 let mainAccount;
 
+let globalVouchers = [];
+
 function init() {
     console.log("Initializing Web3Modal");
 
@@ -32,7 +34,83 @@ function init() {
     });
 }
 
-// --------This function needs to be refined------------------- 
+async function getVoucherList() {
+    try {
+        const response = await fetch("http://localhost:8080/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Connection: "keep-alive",
+                DNT: "1",
+                Origin: "http://localhost:8080",
+                "Accept-Encoding": "gzip, deflate, br",
+            },
+            body: JSON.stringify({
+                query: `
+                    query vouchers($first: Int, $after: String) {
+                        vouchers(first: $first, after: $after) {
+                            edges {
+                                node {
+                                    index
+                                    input {
+                                        index
+                                        timestamp
+                                        msgSender
+                                        blockNumber
+                                    }
+                                    destination
+                                    payload
+                                    proof {
+                                        validity {
+                                            inputIndexWithinEpoch
+                                            outputIndexWithinInput
+                                            outputHashesRootHash
+                                            vouchersEpochRootHash
+                                            noticesEpochRootHash
+                                            machineStateHash
+                                            outputHashInOutputHashesSiblings
+                                            outputHashesInEpochSiblings
+                                        }
+                                        context
+                                    }
+                                }
+                                cursor
+                            }
+                            pageInfo {
+                                hasNextPage
+                                endCursor
+                            }
+                        }
+                    }
+                `,
+                variables: {
+                    first: 10, // Adjust as needed
+                    after: null, // Use for pagination if necessary
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                `GraphQL request failed with status ${response.status}`
+            );
+        }
+
+        const result = await response.json();
+        if (result.errors) {
+            console.error("GraphQL errors:", result.errors);
+            throw new Error("GraphQL returned errors");
+        }
+
+        return result.data;
+    } catch (error) {
+        console.error("Error fetching vouchers:", error);
+        return { vouchers: { edges: [] } }; // Return empty array to avoid breaking the UI
+    }
+}
+
+// --------This function needs to be refined-------------------
 async function fetchAccountData() {
     web3 = new Web3(provider);
     console.log({ web3 });
@@ -46,51 +124,36 @@ async function fetchAccountData() {
     document.querySelector("#connected").style.display = "block";
 
     // Mock data for testing
-    const mockData = {
-        "data": {
-            "vouchers": {
-                "edges": [
-                    {
-                        "node": {
-                            "destination": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
-                            "payload": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000"
-                        }
-                    },
-                    {
-                        "node": {
-                            "destination": "0x84f33e797364bdfc4511bf5ab35b0372aa96ba69",
-                            "payload": "0x00000000000000000000000000000000000000000000000098a7d9b8314c0000"
-                        }
-                    }
-                ]
-            }
-        }
-    };
+    const vocuherList = await getVoucherList();
 
     // Extract vouchers array with just destination and payload
-    const vouchers = mockData.data.vouchers.edges.map(edge => ({
+    const vouchers = vocuherList.vouchers.edges.map((edge) => ({
         destination: edge.node.destination,
-        payload: edge.node.payload
+        payload: edge.node.payload,
+        proof: edge.node.proof,
     }));
 
+    globalVouchers = vouchers;
+
     // Populate vouchers list
-    const vouchersList = document.getElementById('vouchers-list');
-    vouchersList.innerHTML = ''; // Clear existing content
+    const vouchersList = document.getElementById("vouchers-list");
+    vouchersList.innerHTML = ""; // Clear existing content
 
     if (vouchers.length === 0) {
-        vouchersList.innerHTML = '<p>No vouchers found</p>';
+        vouchersList.innerHTML = "<p>No vouchers found</p>";
     } else {
         vouchers.forEach((voucher, index) => {
-            const voucherElement = document.createElement('div');
-            voucherElement.className = 'voucher-item';
-            
+            const voucherElement = document.createElement("div");
+            voucherElement.className = "voucher-item";
+
             // Convert payload from wei to ETH for display
-            const ethValue = web3.utils.fromWei(voucher.payload, 'ether');
-            
+            const ethValue = web3.utils.fromWei(voucher.payload, "ether");
+
             voucherElement.innerHTML = `
                 <div class="voucher-content">
-                    <p>${ethValue} ETH</p>
-                    <button class="claim-button">
+                    <p><strong>Voucher #${index + 1}</strong></p>
+                    <p>Amount: ${ethValue} ETH</p>
+                    <button class="claim-button" onclick="claimVoucher(${index})">
                         Claim Voucher
                     </button>
                 </div>
@@ -99,7 +162,7 @@ async function fetchAccountData() {
         });
     }
 
-    console.log('Vouchers:', vouchers);
+    console.log("Vouchers:", vouchers);
 }
 
 async function refreshAccountData() {
@@ -142,7 +205,6 @@ async function disconnect() {
 
 function getEtherPortalContract() {
     const portalAddress = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044";
-    console.log({ web3, provider });
     // Minimum required ABI for depositEther
     const etherPortalABI = [
         {
@@ -195,7 +257,7 @@ async function payGame() {
             .depositEther(dappAddress, execLayerData)
             .send({
                 from: mainAccount,
-                value: web3.utils.toWei("0.001", "ether"),
+                value: web3.utils.toWei("1", "ether"),
             });
 
         console.log("Transaction sent. Waiting for confirmation...");
@@ -230,18 +292,22 @@ async function startGame() {
 }
 
 function initTabs() {
-    const tabButtons = document.querySelectorAll('.tab-button');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
+    const tabButtons = document.querySelectorAll(".tab-button");
+
+    tabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
             // Remove active class from all buttons and content
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
+            document
+                .querySelectorAll(".tab-button")
+                .forEach((btn) => btn.classList.remove("active"));
+            document
+                .querySelectorAll(".tab-content")
+                .forEach((content) => content.classList.remove("active"));
+
             // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            const tabId = button.getAttribute('data-tab');
-            document.getElementById(`${tabId}-tab`).classList.add('active');
+            button.classList.add("active");
+            const tabId = button.getAttribute("data-tab");
+            document.getElementById(`${tabId}-tab`).classList.add("active");
         });
     });
 }
@@ -256,15 +322,150 @@ window.addEventListener("load", async () => {
     document.querySelector("#startButton").addEventListener("click", startGame);
 });
 
-async function claimVoucher(destination, payload) {
+async function claimVoucher(indexVoucher) {
     try {
-        console.log('Claiming voucher:', { destination, payload });
-        // Here you would implement the actual claiming logic
-        // For now, just show an alert
-        alert('Claiming voucher... (to be implemented)');
+        const voucher = globalVouchers[indexVoucher];
+
+        if (!voucher) {
+            throw new Error("Invalid voucher index.");
+        }
+
+        const { destination, payload, proof } = voucher;
+        console.log("Voucher Data:", { destination, payload, proof });
+
+        const contractAddress = "0xab7528bb862fB57E8A2BCd567a2e929a0Be56a5e";
+
+        // ABI con la definición correcta de "Proof"
+        const contractABI = [
+            {
+                inputs: [
+                    {
+                        internalType: "address",
+                        name: "_destination",
+                        type: "address",
+                    },
+                    { internalType: "bytes", name: "_payload", type: "bytes" },
+                    {
+                        internalType: "struct Proof",
+                        name: "_proof",
+                        type: "tuple",
+                        components: [
+                            {
+                                internalType: "struct OutputValidityProof",
+                                name: "validity",
+                                type: "tuple",
+                                components: [
+                                    {
+                                        internalType: "uint64",
+                                        name: "inputIndexWithinEpoch",
+                                        type: "uint64",
+                                    },
+                                    {
+                                        internalType: "uint64",
+                                        name: "outputIndexWithinInput",
+                                        type: "uint64",
+                                    },
+                                    {
+                                        internalType: "bytes32",
+                                        name: "outputHashesRootHash",
+                                        type: "bytes32",
+                                    },
+                                    {
+                                        internalType: "bytes32",
+                                        name: "vouchersEpochRootHash",
+                                        type: "bytes32",
+                                    },
+                                    {
+                                        internalType: "bytes32",
+                                        name: "noticesEpochRootHash",
+                                        type: "bytes32",
+                                    },
+                                    {
+                                        internalType: "bytes32",
+                                        name: "machineStateHash",
+                                        type: "bytes32",
+                                    },
+                                    {
+                                        internalType: "bytes32[]",
+                                        name: "outputHashInOutputHashesSiblings",
+                                        type: "bytes32[]",
+                                    },
+                                    {
+                                        internalType: "bytes32[]",
+                                        name: "outputHashesInEpochSiblings",
+                                        type: "bytes32[]",
+                                    },
+                                ],
+                            },
+                            {
+                                internalType: "bytes",
+                                name: "context",
+                                type: "bytes",
+                            },
+                        ],
+                    },
+                ],
+                name: "executeVoucher",
+                outputs: [{ internalType: "bool", name: "", type: "bool" }],
+                stateMutability: "nonpayable",
+                type: "function",
+            },
+        ];
+
+        // Inicializar el contrato
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        if (!proof || !proof.validity || !proof.context) {
+            throw new Error("Invalid proof format received.");
+        }
+
+        // Convertir proof a formato correcto
+        const formattedProof = {
+            validity: {
+                inputIndexWithinEpoch: Number(
+                    proof.validity.inputIndexWithinEpoch
+                ), // Convertir uint64
+                outputIndexWithinInput: Number(
+                    proof.validity.outputIndexWithinInput
+                ), // Convertir uint64
+                outputHashesRootHash: proof.validity.outputHashesRootHash,
+                vouchersEpochRootHash: proof.validity.vouchersEpochRootHash,
+                noticesEpochRootHash: proof.validity.noticesEpochRootHash,
+                machineStateHash: proof.validity.machineStateHash,
+                outputHashInOutputHashesSiblings:
+                    proof.validity.outputHashInOutputHashesSiblings.map((e) =>
+                        e.toString()
+                    ), // Asegurar formato bytes32[]
+                outputHashesInEpochSiblings:
+                    proof.validity.outputHashesInEpochSiblings.map((e) =>
+                        e.toString()
+                    ), // Asegurar formato bytes32[]
+            },
+            context: proof.context.toString(), // Convertir a bytes válido
+        };
+
+        console.log("Executing Voucher Transaction...", {
+            destination,
+            payload,
+            formattedProof,
+        });
+
+        // Enviar transacción a executeVoucher
+        const tx = await contract.methods
+            .executeVoucher(destination, payload, formattedProof)
+            .send({
+                from: mainAccount,
+            });
+
+        console.log("Transaction submitted. Waiting for confirmation...");
+
+        await waitForTransactionConfirmation(tx.transactionHash);
+
+        console.log("Voucher successfully claimed!");
+        alert("Voucher successfully claimed!");
     } catch (error) {
-        console.error('Error claiming voucher:', error);
-        alert('Failed to claim voucher');
+        console.error("Error executing voucher:", error);
+        alert("Failed to claim voucher");
     }
 }
 

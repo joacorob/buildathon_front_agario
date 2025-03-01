@@ -7,10 +7,25 @@ const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const SAT = require("sat");
 
+require("dotenv").config();
+
+const { ethers } = require("ethers");
+
+// Dirección del contrato y dApp
+const CONTRACT_ADDRESS = "0x59b22D57D4f067708AB0c00552767405926dc768";
+const DAPP_ADDRESS = "0xab7528bb862fB57E8A2BCd567a2e929a0Be56a5e";
+
+const contractABI = [
+    "function addInput(address _dapp, bytes _input) external returns (bytes32)",
+];
+
+// Configura el provider y signer (debes asegurarte de usar una clave privada segura)
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL); // Asegúrate de definir `RPC_URL`
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider); // Definir `PRIVATE_KEY`
+
+const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
 // Ejemplo: si tu Cartesi Node corre en localhost:8080
 // y el endpoint para "advance" es http://localhost:8080/advance
-const CARTESI_NODE_ADVANCE_URL =
-    process.env.CARTESI_NODE_ADVANCE_URL || "http://localhost:8080/advance";
 
 const gameLogic = require("./game-logic");
 const loggingRepositry = require("./repositories/logging-repository");
@@ -39,38 +54,26 @@ async function handlePlayerEatenTransfer(gotEaten, eater, massEaten) {
         const victimPlayer = map.players.data[gotEaten.playerIndex];
         const winnerPlayer = map.players.data[eater.playerIndex];
 
-        // Por si no hay wallet (ej: un invitado?)
+        // Verificar si ambos jugadores tienen wallet
         if (!victimPlayer?.wallet || !winnerPlayer?.wallet) {
-            console.log(
-                "[WARN] Algún jugador no tiene wallet, no se transfiere nada."
-            );
+            console.log("[WARN] Nothing to send.");
             return;
         }
 
-        // Armamos el payload (ejemplo: transferar "massEaten" tokens)
+        // Crear el payload en formato JSON y convertirlo a HEX
         const transferPayload = {
-            action: "transfer",
-            from: victimPlayer.wallet, // dirección del comido
-            to: winnerPlayer.wallet, // dirección del que come
-            amount: massEaten,
+            win: winnerPlayer.wallet,
+            loss: victimPlayer.wallet,
         };
+        const hexPayload = ethers.toUtf8Bytes(JSON.stringify(transferPayload));
 
-        // Lo convertimos a hex (Cartesi Node recibe {payload: "0x..."})
-        const hexPayload = stringToHex(JSON.stringify(transferPayload));
+        // Enviar la transacción al contrato
+        const tx = await contract.addInput(DAPP_ADDRESS, hexPayload);
+        await tx.wait(); // Espera la confirmación de la transacción
 
-        // Enviamos el input "advance" a Cartesi
-        const response = await fetch(CARTESI_NODE_ADVANCE_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ payload: hexPayload }),
-        });
-
-        console.log(
-            "[CARTESI] Transfer request sent. Response status:",
-            response.status
-        );
+        console.log("[WEB3] Success transfer, hash:", tx.hash);
     } catch (err) {
-        console.error("[CARTESI] Error sending transfer request:", err);
+        console.error("[WEB3] Error Transfer:", err);
     }
 }
 
@@ -113,7 +116,7 @@ const addPlayer = (socket) => {
         if (map.players.findIndexByID(socket.id) > -1) {
             console.log("[INFO] Player ID is already connected, kicking.");
             socket.disconnect();
-        } else if (!util.validNick(clientPlayerData.name)) {
+        } else if (false && !util.validNick(clientPlayerData.name)) {
             socket.emit("kick", "Invalid username.");
             socket.disconnect();
         } else {

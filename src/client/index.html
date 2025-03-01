@@ -3,7 +3,7 @@
     <head>
         <!-- Meta Properties -->
         <meta charset="UTF-8" />
-        <title>Open Agar</title>
+        <title>Bubble Wars v2</title>
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
@@ -47,7 +47,7 @@
         </div>
         <div id="startMenuWrapper">
             <div id="startMenu">
-                <p>Open Agar</p>
+                <p>Bubble Wars v2</p>
                 <input
                     type="text"
                     tabindex="0"
@@ -65,12 +65,18 @@
                 </div>
                 <div id="connected" style="display: none">
                     <div class="tabs">
-                        <button class="tab-button active" data-tab="play">Play</button>
-                        <button class="tab-button" data-tab="vouchers">Claim</button>
+                        <button class="tab-button active" data-tab="play">
+                            Play
+                        </button>
+                        <button class="tab-button" data-tab="vouchers">
+                            Claim
+                        </button>
                     </div>
-                    
+
                     <div id="play-tab" class="tab-content active">
-                        <a onclick="document.getElementById('spawn_cell').play();">
+                        <a
+                            onclick="document.getElementById('spawn_cell').play();"
+                        >
                             <button id="startButton">Play</button>
                         </a>
                         <button id="spectateButton">Spectate</button>
@@ -104,19 +110,21 @@
                                     />Rounded food</label
                                 >
                                 <label
-                                    ><input id="darkMode" type="checkbox" />Toggle
-                                    Dark Mode</label
+                                    ><input
+                                        id="darkMode"
+                                        type="checkbox"
+                                    />Toggle Dark Mode</label
                                 >
                             </ul>
                         </div>
                     </div>
-                    
+
                     <div id="vouchers-tab" class="tab-content">
                         <div id="vouchers-list">
                             <!-- Vouchers will be populated here -->
                         </div>
                     </div>
-                    
+
                     <button id="btn-disconnect">Disconnect wallet</button>
                 </div>
                 <div id="instructions">

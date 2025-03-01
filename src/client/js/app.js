@@ -174,10 +174,15 @@ function setupSocket(socket) {
     socket.on("connect_error", handleDisconnect);
     socket.on("disconnect", handleDisconnect);
 
+    function shortenString(str) {
+        if (str.length <= 6) return str; // Si la longitud es menor o igual a 6, devolver el string original
+        return str.slice(0, 4) + "..." + str.slice(-2);
+    }
+
     // Handle connection.
     socket.on("welcome", function (playerSettings, gameSizes) {
         player = playerSettings;
-        player.name = global.playerName;
+        player.name = `${shortenString(window.mainAccount)}`;
         player.screenWidth = global.screen.width;
         player.screenHeight = global.screen.height;
         player.target = window.canvas.target;
