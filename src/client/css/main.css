@@ -321,29 +321,47 @@ input [type="image"]:focus {
 /* Tab styles */
 .tabs {
     display: flex;
-    gap: 10px;
+    width: 100%;
     margin-bottom: 20px;
+    gap: 0;
 }
 
 .tab-button {
+    flex: 1;
     padding: 10px 20px;
     border: none;
     background: #eee;
     cursor: pointer;
-    border-radius: 5px;
+    margin: 0;
+    transition: all 0.3s ease;  /* Smooth transition for all changes */
+}
+
+.tab-button:first-child {
+    border-radius: 5px 0 0 5px;
+}
+
+.tab-button:last-child {
+    border-radius: 0 5px 5px 0;
 }
 
 .tab-button.active {
     background: #4CAF50;
     color: white;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);  /* Add shadow to active tab */
 }
 
 .tab-content {
     display: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
 }
 
 .tab-content.active {
     display: block;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* Voucher list styles */
@@ -355,10 +373,17 @@ input [type="image"]:focus {
 
 /* Voucher item styles */
 .voucher-item {
-    background: #f5f5f5;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 10px;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.voucher-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .voucher-content {
@@ -367,21 +392,21 @@ input [type="image"]:focus {
 
 .voucher-content p {
     margin: 5px 0;
-}
-
-.voucher-content strong {
-    color: #4CAF50;
+    text-align: center;
+    font-size: 16px;
 }
 
 .claim-button {
     background: #4CAF50;
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 12px;
     border-radius: 4px;
     cursor: pointer;
-    margin-top: 10px;
     font-weight: bold;
+    width: 100%;
+    margin-top: 15px;
+    transition: background-color 0.2s ease;
 }
 
 .claim-button:hover {

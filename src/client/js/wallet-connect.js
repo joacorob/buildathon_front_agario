@@ -89,9 +89,8 @@ async function fetchAccountData() {
             
             voucherElement.innerHTML = `
                 <div class="voucher-content">
-                    <p><strong>Voucher #${index + 1}</strong></p>
-                    <p>Amount: ${ethValue} ETH</p>
-                    <button class="claim-button" onclick="claimVoucher('${voucher.destination}', '${voucher.payload}')">
+                    <p>${ethValue} ETH</p>
+                    <button class="claim-button">
                         Claim Voucher
                     </button>
                 </div>
