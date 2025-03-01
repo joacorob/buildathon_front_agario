@@ -3,7 +3,7 @@
     <head>
         <!-- Meta Properties -->
         <meta charset="UTF-8" />
-        <title>Bubble Wars v2</title>
+        <title>Based Bubbles</title>
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
@@ -61,7 +61,7 @@
                 >
                 <br />
                 <div id="notconnected">
-                    <button id="btn-connect">Connect wallet</button>
+                    <button id="btn-connect" class="game-button">Connect wallet</button>
                 </div>
                 <div id="connected" style="display: none">
                     <div class="tabs">
@@ -74,12 +74,32 @@
                     </div>
 
                     <div id="play-tab" class="tab-content active">
-                        <a
-                            onclick="document.getElementById('spawn_cell').play();"
-                        >
-                            <button id="startButton">Play</button>
+                        <a onclick="document.getElementById('spawn_cell').play();">
+                            <button id="startButton" class="slanted-button" style="display: flex; align-items: center;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="#E8CA4A" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                                    <path opacity="0.1" fill-rule="evenodd" clip-rule="evenodd" d="M12 3C4.5885 3 3 4.5885 3 12C3 19.4115 4.5885 21 12 21C19.4115 21 21 19.4115 21 12C21 4.5885 19.4115 3 12 3ZM15.224 13.0171C16.011 12.5674 16.011 11.4326 15.224 10.9829L10.7817 8.44446C10.0992 8.05446 9.25 8.54727 9.25 9.33333L9.25 14.6667C9.25 15.4527 10.0992 15.9455 10.7817 15.5555L15.224 13.0171Z" fill="#323232"/>
+                                    <path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="#323232" stroke-width="2"/>
+                                    <path d="M10.9 8.8L10.6577 8.66152C10.1418 8.36676 9.5 8.73922 9.5 9.33333L9.5 14.6667C9.5 15.2608 10.1418 15.6332 10.6577 15.3385L10.9 15.2L15.1 12.8C15.719 12.4463 15.719 11.5537 15.1 11.2L10.9 8.8Z" stroke="#323232" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p style="margin: 0;">Play</p>
+                            </button>
                         </a>
-                        <button id="spectateButton">Spectate</button>
+                        <button id="spectateButton" class="slanted-button" style="display: flex; align-items: center;">
+                            <!-- SVG Binoculars Icon -->
+                            <svg width="24" height="24" viewBox="0 0 512 512" fill="#E8CA4A" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                                <path d="M73.146,256l47.488-47.488C94.403,208.512,73.146,229.777,73.146,256z"/>
+                                <path d="M343.878,256l47.488-47.488C365.142,208.512,343.878,229.777,343.878,256z"/>
+                                <path d="M391.366,135.366H120.635C54.006,135.366,0,189.379,0,256s54.006,120.634,120.635,120.634
+                                    c47.147,0,87.955-27.068,107.794-66.497v0.202c8.074-14.204,15.739-18.994,27.572-18.994c11.833,0,19.497,4.79,27.572,18.994
+                                    v-0.217c19.83,39.436,60.639,66.512,107.794,66.512C457.994,376.634,512,322.621,512,256S457.994,135.366,391.366,135.366z
+                                    M120.635,328.379c-39.979,0-72.379-32.4-72.379-72.379c0-39.971,32.4-72.371,72.379-72.371c39.971,0,72.379,32.4,72.379,72.371
+                                    C193.014,295.979,160.606,328.379,120.635,328.379z M256,267.291c-9.718,0-17.591-7.874-17.591-17.591
+                                    c0-9.718,7.874-17.591,17.591-17.591c9.718,0,17.591,7.873,17.591,17.591C273.592,259.417,265.718,267.291,256,267.291z
+                                    M391.366,328.379c-39.972,0-72.379-32.4-72.379-72.379c0-39.971,32.407-72.371,72.379-72.371c39.971,0,72.379,32.4,72.379,72.371
+                                    C463.745,295.979,431.337,328.379,391.366,328.379z"/>
+                            </svg>
+                            <p style="margin: 0;">Spectate</p>
+                        </button>
                         <button id="settingsButton">Settings</button>
                         <br />
                         <div id="settings">

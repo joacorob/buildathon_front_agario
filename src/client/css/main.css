@@ -146,18 +146,25 @@ div {
     margin-top: 100px;
     width: 350px;
     padding: 20px;
-    border-radius: 5px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    background-color: white;
+    border-radius: 25px;
+    -moz-border-radius: 25px;
+    -webkit-border-radius: 25px;
+    background-color: #27234C;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
-}
+    color: white;
+  }
 
 #startMenu p {
     padding: 0;
     text-align: center;
     font-size: x-large;
     font-weight: bold;
+}
+
+.bubbles-text {
+    color: #DD9D09;
+    font-size: 24px;
 }
 
 #playerNameInput {
@@ -167,9 +174,9 @@ div {
     border: solid 1px #dcdcdc;
     transition: box-shadow 0.3s, border 0.3s;
     box-sizing: border-box;
-    border-radius: 5px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
+    border-radius: 15px;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
     margin-bottom: 10px;
     outline: none;
 }
@@ -180,10 +187,11 @@ div {
     box-shadow: 0 0 3px 1px #dddddd;
 }
 
-#startButton,
-#btn-connect,
+
+
 #btn-disconnect,
-#spectateButton {
+#settingsButton,
+.claim-button {
     position: relative;
     margin: auto;
     margin-top: 10px;
@@ -194,12 +202,12 @@ div {
     color: white;
     text-align: center;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: #2ecc71;
+    background: #6e5ffd;
     border: 0;
-    border-bottom: 2px solid #28be68;
+    border-bottom: 2px solid #5d4fe6;
     cursor: pointer;
-    -webkit-box-shadow: inset 0 -2px #28be68;
-    box-shadow: inset 0 -2px #28be68;
+    -webkit-box-shadow: inset 0 -2px #5d4fe6;
+    box-shadow: inset 0 -2px #5d4fe6;
     border-radius: 5px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -213,41 +221,13 @@ div {
 #btn-connect:hover,
 #btn-disconnect:hover,
 #startButton:active,
-#startButton:hover {
-    top: 1px;
-    background: #55d88b;
-    outline: none;
-    -webkit-box-shadow: none;
-    box-shadow: none;
-}
-
-#settingsButton {
-    position: relative;
-    margin: auto;
-    margin-top: 10px;
-    width: 100%;
-    height: 40px;
-    box-sizing: border-box;
-    font-size: large;
-    color: white;
-    text-align: center;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: #2ecc71;
-    border: 0;
-    border-bottom: 2px solid #28be68;
-    cursor: pointer;
-    -webkit-box-shadow: inset 0 -2px #28be68;
-    box-shadow: inset 0 -2px #28be68;
-    border-radius: 5px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    margin-bottom: 10px;
-}
-
+#startButton:hover,
 #settingsButton:active,
-#settingsButton:hover {
+#settingsButton:hover,
+.claim-button:active,
+.claim-button:hover {
     top: 1px;
-    background: #55d88b;
+    background: #7d70fe;
     outline: none;
     -webkit-box-shadow: none;
     box-shadow: none;
@@ -330,10 +310,11 @@ input [type="image"]:focus {
     flex: 1;
     padding: 10px 20px;
     border: none;
-    background: #eee;
+    background: #3f3a7c;
     cursor: pointer;
     margin: 0;
-    transition: all 0.3s ease;  /* Smooth transition for all changes */
+    transition: all 0.3s ease;
+    color: #dcdcdc;  /* Smooth transition for all changes */
 }
 
 .tab-button:first-child {
@@ -345,10 +326,10 @@ input [type="image"]:focus {
 }
 
 .tab-button.active {
-    background: #4CAF50;
+    background: #6e5ffd;
     color: white;
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);  /* Add shadow to active tab */
+    box-shadow: 0 2px 4px rgba(110, 95, 253, 0.2);
 }
 
 .tab-content {
@@ -373,8 +354,8 @@ input [type="image"]:focus {
 
 /* Voucher item styles */
 .voucher-item {
-    background: white;
-    border-radius: 8px;
+    background: #2e2d60;
+    border-radius: 25px;
     padding: 20px;
     margin-bottom: 15px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -397,11 +378,10 @@ input [type="image"]:focus {
 }
 
 .claim-button {
-    background: #4CAF50;
+    background: #7364ff;
     color: white;
     border: none;
-    padding: 12px;
-    border-radius: 4px;
+    border-radius: 15px;
     cursor: pointer;
     font-weight: bold;
     width: 100%;
@@ -410,9 +390,113 @@ input [type="image"]:focus {
 }
 
 .claim-button:hover {
-    background: #45a049;
+    background: #7d70fe;
 }
 
 .claim-button:active {
-    background: #3d8b40;
+    background: #5d4fe6;
 }
+
+.slanted-button {
+    position: relative;
+    background: linear-gradient(to top, #4e4499 0%, #3a3280 100%);
+    color: white;
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 15px 25px;
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .slanted-button:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -10px;
+    width: 20px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.1);
+    transform: skewX(-20deg);
+  }
+  
+  .slanted-button:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -10px;
+    width: 20px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.1);
+    transform: skewX(-20deg);
+  }
+  
+  .slanted-button:hover {
+    background: linear-gradient(to top, #5448a8 0%, #403788 100%);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  .slanted-button .icon {
+    margin-right: 10px;
+    color: #9f93ff;
+  }
+
+  .game-button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom, #7066f7 0%, #5245e2 100%);
+    border-radius: 15px;
+    padding: 10px 20px 10px 10px;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+  }
+  
+  .game-button:hover {
+    background: linear-gradient(to bottom, #7b71ff 0%, #5b4ef1 100%);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
+  }
+  
+  .game-button .icon {
+    background: linear-gradient(135deg, #f3ca40 0%, #f8b64c 100%);
+    min-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+  }
+  
+  .game-button .icon img {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* Optional animation for the icon */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  .game-button:hover .icon img {
+    animation: spin 2s linear infinite;
+  }
